@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sas_arena.models import Risk, Task, TaskKind
+from sas_arena.models import Risk, Task, TaskKind, TaskState
 from sas_arena.store import ArenaStore
 
 
@@ -86,6 +86,24 @@ class StoreTests(unittest.TestCase):
             self.assertTrue(
                 any(item["type"] == "agent.message_delivered" for item in delivered)
             )
+
+    def test_retry_terminal_task_preserves_history_and_resets_attempts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = ArenaStore(Path(temp) / "arena.db")
+            store.initialize()
+            task = Task("svc", TaskKind.PATCH_BUILD, "repair service", temp)
+            store.enqueue(task)
+            leased = store.lease_next("worker")
+            assert leased is not None
+            store.set_state(task.id, TaskState.FAILED)
+
+            self.assertTrue(store.retry_terminal_task(task.id))
+            retried = store.lease_next("worker-2")
+            assert retried is not None
+            self.assertEqual(retried.id, task.id)
+            self.assertEqual(retried.attempts, 1)
+            events = store.recent_task_events(task.id)
+            self.assertTrue(any(item["type"] == "task.retried" for item in events))
 
 
 if __name__ == "__main__":

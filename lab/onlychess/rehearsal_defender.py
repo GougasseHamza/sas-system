@@ -12,6 +12,11 @@ import sys
 import time
 from pathlib import Path
 
+from sas_arena.config import ArenaConfig
+from sas_arena.models import Risk, Task, TaskKind, TaskLane
+from sas_arena.specs import EventSpec
+from sas_arena.store import ArenaStore
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG = "config/arena.onlychess-remote.toml"
@@ -42,10 +47,59 @@ def ensure_live_phase() -> None:
         raise RuntimeError(f"cannot launch defender in phase {phase!r}")
 
 
+def seed_defense_team() -> None:
+    """Queue the visible blue-team starter roles before worker processes start."""
+    config = ArenaConfig.load(PROJECT_ROOT / CONFIG)
+    database = config.section("state")["database"]
+    store = ArenaStore(config.project_root / database)
+    store.initialize()
+    service = EventSpec.load(PROJECT_ROOT / EVENT).service("onlychess")
+    revision = str(service.context.get("revision", "unknown"))
+    starters = (
+        (TaskKind.TRAFFIC_TRIAGE, "claude", "traffic-analyst", True, False,
+         "Review the service traffic/checker boundary and stand by for suspicious traffic. Prepare bounded detection and triage notes; do not invent observations."),
+        (TaskKind.TRAFFIC_RECONSTRUCT, "claude", "traffic-reconstructor", True, False,
+         "Prepare the exact replay workflow for suspicious requests and identify the evidence needed before escalating to reverse exploitation."),
+        (TaskKind.REVERSE_EXPLOIT, "codex", "reverse-exploit-captain", True, True,
+         "Review service source and checker behavior for defensive reverse-exploitation readiness. When traffic evidence arrives, reconstruct the exploit and identify the smallest root-cause patch."),
+        (TaskKind.PATCH_BUILD, "codex", "patch-captain", True, True,
+         "Audit the service trust boundaries and prepare a minimal checker-preserving patch strategy. Wait for concrete incident evidence before changing code."),
+        (TaskKind.PATCH_BUILD, "claude", "patch-builder", True, True,
+         "Independently map likely patch locations and regression cases. Produce a candidate only from concrete monitor, checker, source, or traffic evidence."),
+        (TaskKind.PATCH_VERIFY, "deepseek", "patch-verifier", True, False,
+         "Act as an independent defense reviewer. Check candidate patches for exploit blocking, checker compatibility, and availability; report exact failing tests."),
+    )
+    for kind, provider, role, captain, write_access, goal in starters:
+        task_id, created = store.enqueue(Task(
+            service=service.id,
+            kind=kind,
+            lane=TaskLane.DEFENSE,
+            risk=Risk.HIGH if kind in {TaskKind.REVERSE_EXPLOIT, TaskKind.PATCH_BUILD} else Risk.NORMAL,
+            expected_value=0.9,
+            deadline_seconds=1800,
+            preferred_provider=provider,
+            goal=goal,
+            workdir=str(service.root),
+            context={
+                "role": role,
+                "captain_session": captain,
+                "operator_mode": True,
+                "write_access": write_access,
+                "service_revision": revision,
+                "verification": {"commands": []},
+                "defense_starter": True,
+            },
+            dedupe_key=f"defense-starter:{service.id}:{role}:{provider}",
+        ))
+        if not created:
+            store.retry_terminal_task(task_id)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--workers", type=int, default=10)
     parser.add_argument("--no-tui", action="store_true")
+    parser.add_argument("--read-only", action="store_true")
     args = parser.parse_args()
     if args.workers < 1:
         raise ValueError("--workers must be positive")
@@ -53,8 +107,7 @@ def main() -> int:
 
     checked("doctor")
     checked("event-validate", EVENT)
-    checked("monitor-once", EVENT)
-    checked("traffic-once", EVENT)
+    seed_defense_team()
     ensure_live_phase()
 
     log_root = PROJECT_ROOT / ".arena" / "rehearsal-logs"
@@ -78,11 +131,16 @@ def main() -> int:
             )
             children.append((name, process, log))
             print(f"started {name} pid={process.pid} log={log.name}")
-        print("Blue team is live. Ctrl-C stops all four background processes.")
+        print(
+            "Blue team is live. Monitor and traffic preflight now run in the "
+            "background so the TUI opens immediately. Ctrl-C stops all four "
+            "background processes."
+        )
         if not args.no_tui:
-            return subprocess.run(
-                arena("tui", EVENT, "--read-only"), cwd=PROJECT_ROOT
-            ).returncode
+            command = arena("tui", EVENT)
+            if args.read_only:
+                command.append("--read-only")
+            return subprocess.run(command, cwd=PROJECT_ROOT).returncode
         while True:
             for name, process, _ in children:
                 if process.poll() is not None:

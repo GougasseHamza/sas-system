@@ -82,6 +82,7 @@ def seed_offense_tasks(name: str) -> None:
             "finding. It must consume attack data and print recovered flags.",
         ),
     )
+    run_suffix = os.environ.get("SAS_RUN_ID", "")
     for index, (kind, provider, write_access, goal) in enumerate(tasks):
         store.enqueue(
             Task(
@@ -106,7 +107,10 @@ def seed_offense_tasks(name: str) -> None:
                     "technical_objective": goal,
                     "verification": {"commands": []},
                 },
-                dedupe_key=f"rehearsal-attacker:{name}:{service.id}:{kind}:{index}",
+                dedupe_key=(
+                    f"rehearsal-attacker:{name}:{service.id}:{kind}:{index}"
+                    f":{run_suffix}"
+                ),
             )
         )
 

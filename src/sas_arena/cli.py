@@ -352,7 +352,29 @@ def _provider_readiness(family: str, values: dict) -> tuple[bool, str]:
         resolved = resolve_executable(
             command, "~/.local/bin/claude", "~/.claude/local/claude"
         )
-        return bool(resolved), resolved or command
+        if not resolved:
+            return False, command
+        try:
+            auth = subprocess.run(
+                [resolved, "auth", "status"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=5,
+                env=ClaudeCliProvider.isolated_environment("claude"),
+            )
+            payload = json.loads(auth.stdout)
+        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+            return False, f"{resolved}; could not inspect Claude subscription auth"
+        logged_in = bool(payload.get("loggedIn"))
+        method = str(payload.get("authMethod") or "none")
+        api_billed = "api" in method.lower()
+        if not logged_in or api_billed:
+            return False, (
+                f"{resolved}; Claude subscription OAuth missing "
+                f"(authMethod={method}); run `claude auth login`"
+            )
+        return True, f"{resolved} + Claude subscription auth ({method})"
     if family == "deepseek" and values.get("transport", "opencode") == "opencode":
         command = str(values.get("command", "opencode"))
         resolved = resolve_executable(

@@ -346,6 +346,36 @@ uv run sas-arena --config config/arena.local.toml \
   agent-watch TASK_ID --follow
 ```
 
+The blue-team rehearsal launcher seeds the defense roles immediately: Claude
+traffic analyst/reconstructor, Codex reverse-exploit and patch captains, Claude
+patch builder, and DeepSeek patch verifier. Start it with:
+
+```bash
+uv run --no-sync python lab/onlychess/rehearsal_defender.py --workers 10
+```
+
+There is also a single wrapper for both sides. On a defender laptop:
+
+```bash
+./tools/start-rehearsal.sh defender
+```
+
+On Sami/Kodo's attacker laptop:
+
+```bash
+./tools/start-rehearsal.sh attacker sami
+```
+
+The attacker mode runs the red cell beside the same interactive TUI; quitting
+the TUI stops that red-cell launcher.
+
+Its TUI is interactive. Press `a` for the live-agent view, `j/k` (or arrow
+keys) to select a task, `m` to send a message to that task's configured
+provider, and `o` to return to the overview. The view shows only public task
+events, tool activity, summaries, verifier results, and errors; private model
+reasoning is never displayed. The launcher also accepts `--read-only` when a
+non-interactive observer is required.
+
 The watch stream shows state changes, provider/session startup, public tool
 activity, completion, cancellation, verifier results, and errors. It never
 shows private chain-of-thought.

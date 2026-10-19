@@ -132,8 +132,9 @@ PY
         [ "$#" -eq 1 ] || exit 2
         systemctl stop sas-ad-simulator.service
         systemctl stop sas-onlychess-lab.service
-        podman rm -f sas-onlychess-canary sas-onlychess sas-onlychess-db \
-            >/dev/null 2>&1 || true
+        podman rm -f sas-onlychess-canary >/dev/null 2>&1 || true
+        podman rm -f sas-onlychess >/dev/null 2>&1 || true
+        podman rm -f sas-onlychess-db >/dev/null 2>&1 || true
         podman volume rm sas-onlychess-db >/dev/null 2>&1 || true
         printf '%s\n' "$BASE_IMAGE" > "$LAB_ROOT/active-image"
         rm -f "$LAB_ROOT/rollback-image" "$LAB_ROOT/data/state.json"

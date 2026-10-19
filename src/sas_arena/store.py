@@ -1373,6 +1373,8 @@ class ArenaStore:
                     "service": payload.get("service", ""),
                     "kind": payload.get("kind", ""),
                     "goal": payload.get("goal", ""),
+                    "provider": payload.get("preferred_provider", ""),
+                    "role": (payload.get("context") or {}).get("role", ""),
                     "state": str(row["state"]),
                     "attempts": int(row["attempts"]),
                     "worker": row["lease_owner"],
@@ -1389,6 +1391,28 @@ class ArenaStore:
                 "SELECT state FROM tasks WHERE id = ?", (task_id,)
             ).fetchone()
         return None if row is None else str(row["state"])
+
+    def retry_terminal_task(self, task_id: str) -> bool:
+        """Requeue a failed/rejected task without deleting its public history."""
+        now = time.time()
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT state FROM tasks WHERE id = ?", (task_id,)
+            ).fetchone()
+            if row is None or str(row["state"]) not in {
+                TaskState.FAILED.value,
+                TaskState.REJECTED.value,
+            }:
+                return False
+            db.execute(
+                """
+                UPDATE tasks SET state = ?, attempts = 0, lease_owner = NULL,
+                    lease_until = NULL, updated_at = ? WHERE id = ?
+                """,
+                (TaskState.QUEUED.value, now, task_id),
+            )
+            self._event(db, task_id, "task.retried", {"previous": str(row["state"])})
+        return True
 
     def queue_agent_message(self, task_id: str, provider: str, message: str) -> int:
         if not message.strip():
