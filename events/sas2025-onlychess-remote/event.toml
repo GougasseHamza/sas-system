@@ -1,0 +1,30 @@
+schema_version = 1
+id = "sas2025-onlychess-remote"
+name = "SAS 2025 OnlyChess single-service rehearsal"
+tick_seconds = 120
+flag_pattern = '[A-Z0-9]{31}='
+services = ["services/onlychess.toml"]
+
+[scope]
+network_enabled = true
+allowed_cidrs = ["147.182.179.38/32"]
+
+[submission]
+flag_lifetime_seconds = 600
+interval_seconds = 3
+batch_size = 20
+lease_seconds = 20
+
+[observation]
+hook = "observe"
+interval_seconds = 2
+
+[hooks.observe]
+argv = ["uv", "run", "sas-arena", "--config", "../../config/arena.onlychess-remote.toml", "event-http-observe", "adapter.toml"]
+cwd = "."
+timeout_seconds = 10
+
+[hooks.submit]
+argv = ["uv", "run", "sas-arena", "--config", "../../config/arena.onlychess-remote.toml", "event-http-submit-batch", "adapter.toml", "{flags_json}"]
+cwd = "."
+timeout_seconds = 10

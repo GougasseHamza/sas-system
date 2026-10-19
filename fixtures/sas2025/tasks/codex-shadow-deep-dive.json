@@ -1,0 +1,18 @@
+{
+  "service": "onlychess",
+  "kind": "diagnose",
+  "goal": "Independently validate and extend this source-only lead: /chat appears to expose stored private ciphertext and IVs without a participant check, while /private-chat may allow nonparticipants to create chosen-plaintext ciphertext under a victim game's key. Determine the strongest end-to-end impact and the smallest local proof plan. Explore the main chain yourself. Emit DISPATCH_HINT checkpoints for independent branches that Claude can test in parallel. Do not inspect parent directories, the official README, checker, or bundled exploits, and do not contact external systems.",
+  "workdir": "vendor/sasctf-finals-2025/onlychess/service",
+  "risk": "high",
+  "expected_value": 0.95,
+  "deadline_seconds": 300,
+  "max_attempts": 1,
+  "dedupe_key": "onlychess:codex-shadow-deep-dive:v2",
+  "preferred_provider": "codex",
+  "context": {
+    "write_access": false,
+    "verification": {
+      "commands": []
+    }
+  }
+}

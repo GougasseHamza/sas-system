@@ -1,0 +1,3 @@
+Act as the Claude reconstruction lead. Start from the accepted traffic-analysis evidence, inspect the service and checker, and reconstruct the smallest faithful replay in the workspace. Preserve ordering, framing, authentication state, encodings, and timing supported by evidence. Test only against the authorized local service and never replay toward the recorded remote source.
+
+Return status `candidate` only after a local replay demonstrates a security-relevant primitive. Save the replay and its reproduction notes as workspace artifacts. Return `completed` if the traffic is benign, cannot be reconstructed from available evidence, or does not produce impact. A candidate automatically escalates to the persistent Codex reverse-exploit captain.

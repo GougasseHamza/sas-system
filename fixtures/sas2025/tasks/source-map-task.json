@@ -1,0 +1,16 @@
+{
+  "service": "onlychess",
+  "kind": "source_map",
+  "goal": "Map authentication, anonymous-user migration, game membership, and private-chat key access. Report concrete source evidence and the next deterministic tests. Do not use the bundled writeup.",
+  "workdir": "vendor/sasctf-finals-2025/onlychess/service",
+  "risk": "normal",
+  "expected_value": 0.7,
+  "deadline_seconds": 240,
+  "max_attempts": 2,
+  "context": {
+    "write_access": false,
+    "verification": {
+      "commands": []
+    }
+  }
+}

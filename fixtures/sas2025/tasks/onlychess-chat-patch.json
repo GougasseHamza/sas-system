@@ -1,0 +1,30 @@
+{
+  "service": "onlychess",
+  "kind": "patch_build",
+  "goal": "Implement the smallest robust fix for the confirmed chat authorization flaws. Preserve the intended spectator public-chat behavior, but prevent nonparticipants from receiving private-message envelopes, prevent nonparticipants from POSTing private messages, and bind public message authorship to the server-side session. Work only in the supplied service workspace. Dispatch bounded review or test-design branches to fast workers while you implement. Before finalizing, read worker updates and run focused local tests that do not require external systems.",
+  "workdir": "vendor/sasctf-finals-2025/onlychess/service",
+  "risk": "critical",
+  "expected_value": 1.0,
+  "deadline_seconds": 900,
+  "max_attempts": 1,
+  "preferred_provider": "codex",
+  "dedupe_key": "onlychess:chat-auth-patch:v1",
+  "context": {
+    "write_access": true,
+    "technical_objective": "Design a checker-safe fix for the OnlyChess chat authorization issues while preserving spectator public chat.",
+    "verification": {
+      "commands": [
+        [
+          "{arena_root}/.venv/bin/python",
+          "{arena_root}/lab/onlychess/verify_candidate.py",
+          "--source-dir",
+          "{workspace}",
+          "--must-block-command-json",
+          "[\"{arena_root}/.venv/bin/python\",\"{arena_root}/lab/onlychess/chat_auth_probe.py\",\"--base-url\",\"{base_url}\"]",
+          "--must-block-returncode",
+          "10"
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,91 @@
+schema_version = 1
+id = "service-a"
+name = "Replace with the event service name"
+root = "../../../fixtures/generic-service"
+tags = ["template"]
+
+[targets]
+hosts = []
+
+[context]
+revision = "template-v1"
+notes = "Replace every placeholder hook during service bootstrap."
+
+[cell]
+workers = 4
+provider_instances = []
+offense_enabled = false
+
+[hooks.health]
+argv = ["python3", "-c", "print('healthy')"]
+timeout_seconds = 5
+
+[hooks.checker]
+argv = ["python3", "-c", "print('checker passed')"]
+timeout_seconds = 10
+
+[hooks.integrity]
+argv = ["python3", "-c", "print('integrity baseline unchanged')"]
+timeout_seconds = 5
+
+[hooks.verify_patch]
+argv = ["python3", "-c", "import pathlib,sys; assert pathlib.Path(sys.argv[1]).is_dir()", "{candidate_root}"]
+timeout_seconds = 30
+
+[hooks.deploy]
+argv = ["python3", "-c", "print('template deploy', '{revision}')"]
+timeout_seconds = 30
+
+[hooks.rollback]
+argv = ["python3", "-c", "print('template rollback')"]
+timeout_seconds = 30
+
+[hooks.attack]
+argv = ["python3", "-c", "print('no exploit registered for', '{target}')"]
+timeout_seconds = 10
+
+[hooks.traffic]
+argv = ["python3", "-c", "import json; print(json.dumps({'detections': []}))"]
+timeout_seconds = 5
+
+[traffic]
+hook = "traffic"
+interval_seconds = 2
+min_score = 0.7
+max_detections = 50
+dedupe_window_seconds = 300
+deadline_seconds = 300
+risk = "high"
+
+[monitors.availability]
+hook = "health"
+interval_seconds = 5
+failure_threshold = 2
+recovery_threshold = 1
+task_kind = "incident_response"
+lane = "defense"
+risk = "critical"
+auto_rollback = false
+rollback_window_seconds = 300
+
+[monitors.checker]
+hook = "checker"
+interval_seconds = 30
+failure_threshold = 1
+recovery_threshold = 1
+task_kind = "diagnose"
+lane = "defense"
+risk = "high"
+auto_rollback = false
+rollback_window_seconds = 300
+
+[monitors.integrity]
+hook = "integrity"
+interval_seconds = 15
+failure_threshold = 1
+recovery_threshold = 1
+task_kind = "traffic_triage"
+lane = "defense"
+risk = "high"
+auto_rollback = false
+rollback_window_seconds = 300

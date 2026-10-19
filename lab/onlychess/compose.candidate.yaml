@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: chess
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: chessforever
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d chess"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+
+  migrations:
+    image: ghcr.io/kukymbr/goose-docker:3.26.0
+    volumes:
+      - "${ONLYCHESS_SOURCE}/migrations:/migrations:ro"
+    working_dir: /migrations
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: postgres://root:chessforever@db:5432/chess?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: "${ONLYCHESS_SOURCE}"
+    ports:
+      - "127.0.0.1:${ONLYCHESS_PORT}:4000"
+    volumes:
+      - "${ONLYCHESS_SOURCE}/templates:/templates:ro"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4000/"]
+      interval: 1s
+      timeout: 2s
+      retries: 30

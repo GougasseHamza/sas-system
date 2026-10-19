@@ -1,0 +1,13 @@
+[http]
+tick_url = "http://147.182.179.38:8088/api/state"
+tick_path = "tick"
+scoreboard_url = "http://147.182.179.38:8088/api/scoreboard"
+attack_info_url = "http://147.182.179.38:8088/api/client/attack_data"
+submit_url = "http://147.182.179.38:8088/flags"
+submit_method = "PUT"
+submit_payload = "array"
+accepted_contains = "Flag accepted!"
+token_env = "SAS_TEAM_TOKEN"
+token_header = "X-Team-Token"
+token_prefix = ""
+timeout_seconds = 5

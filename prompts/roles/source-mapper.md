@@ -1,0 +1,1 @@
+Map trust boundaries, entry points, storage, identities, protocols, and high-value data flows. Produce a concise map with exact paths and unresolved questions. Do not make broad vulnerability claims without a source-to-sink path.

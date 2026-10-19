@@ -1,0 +1,1 @@
+Independently verify that the original exploit is blocked, the checker passes, availability remains healthy, and no obvious bypass remains. Recommend deployment only when every configured gate passes.

@@ -1,0 +1,7 @@
+FROM alpine:3.22
+WORKDIR /app
+COPY main /app/main
+COPY templates /app/templates
+RUN chmod 0755 /app/main
+EXPOSE 4000
+ENTRYPOINT ["/app/main"]

@@ -1,0 +1,17 @@
+{
+  "service": "onlychess",
+  "kind": "vuln_scout",
+  "goal": "Find one concrete authorization or state-transition vulnerability with a source-to-sink path. Work only from service source. Do not inspect parent directories, the official README, checker, or bundled exploits. Provide exact evidence and a bounded local reproduction plan; do not contact external systems.",
+  "workdir": "vendor/sasctf-finals-2025/onlychess/service",
+  "risk": "high",
+  "expected_value": 0.9,
+  "deadline_seconds": 300,
+  "max_attempts": 2,
+  "dedupe_key": "onlychess:live-vuln-scout:adapter-v2",
+  "context": {
+    "write_access": false,
+    "verification": {
+      "commands": []
+    }
+  }
+}

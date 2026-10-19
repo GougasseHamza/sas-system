@@ -1,0 +1,19 @@
+[http]
+# Fill these from the organizer documentation. No SAS 2026 endpoint is assumed.
+tick_url = "http://scoreboard.example/api/current_tick"
+tick_path = "tick"
+scoreboard_url = "http://scoreboard.example/api/scoreboard"
+attack_info_url = "http://scoreboard.example/api/attack_info"
+submit_url = "http://scoreboard.example/api/flags"
+submit_method = "POST"
+submit_field = "flag"
+# Use "array" for ForcAD endpoints that expect ["FLAG", ...].
+submit_payload = "object"
+# Optional response marker. If absent, every 2xx response is considered accepted.
+accepted_contains = ""
+timeout_seconds = 3
+
+# Optional authentication. The token itself stays outside TOML.
+token_env = "SAS_EVENT_TOKEN"
+token_header = "Authorization"
+token_prefix = "Bearer "

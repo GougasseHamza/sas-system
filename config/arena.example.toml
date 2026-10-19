@@ -1,0 +1,153 @@
+[state]
+database = ".arena/arena.db"
+run_root = ".arena/worktrees"
+artifact_root = ".arena/artifacts"
+
+[scope]
+allowed_roots = ["."]
+network_enabled = false
+allowed_cidrs = []
+
+[prompts]
+root = "prompts"
+
+[routing]
+codex_hedge_delay_seconds = 90
+max_parallel_candidates = 3
+
+[phases]
+grace_duration_seconds = 1800
+
+[phases.setup]
+cell_workers = 2
+codex_tasks_per_service = 0
+shadow_children_per_codex = 0
+offense_enabled = false
+submission_enabled = false
+monitoring_enabled = true
+traffic_enabled = false
+
+[phases.grace]
+cell_workers = 10
+codex_tasks_per_service = 5
+shadow_children_per_codex = 10
+offense_enabled = false
+submission_enabled = false
+monitoring_enabled = true
+traffic_enabled = false
+
+[phases.live]
+cell_workers = 5
+codex_tasks_per_service = 1
+shadow_children_per_codex = 4
+offense_enabled = true
+submission_enabled = true
+monitoring_enabled = true
+traffic_enabled = true
+
+[phases.frozen]
+cell_workers = 5
+codex_tasks_per_service = 1
+shadow_children_per_codex = 4
+offense_enabled = true
+submission_enabled = true
+monitoring_enabled = true
+traffic_enabled = true
+
+[phases.ended]
+cell_workers = 1
+codex_tasks_per_service = 0
+shadow_children_per_codex = 0
+offense_enabled = false
+submission_enabled = false
+monitoring_enabled = false
+traffic_enabled = false
+
+[farm]
+# Run multiple arena processes with the same shard_count and distinct zero-based
+# shard_index values. Every target is assigned to exactly one farm process.
+shard_index = 0
+shard_count = 1
+submission_worker_id = "flag-broker-0"
+
+[promotion]
+# Verified exploits can safely enter the registry automatically because the
+# service's verify_exploit hook already passed. Patches stay in a manual queue.
+auto_promote_exploits = true
+
+[shadow]
+enabled = true
+max_children_per_parent = 12
+default_deadline_seconds = 180
+
+[providers.codex]
+# required: startup fails if unavailable; optional: skip this provider; disabled: off.
+availability = "disabled"
+# The SDK owns one persistent app-server process and reuses your Codex login.
+transport = "sdk"
+# Leave empty to use the runtime pinned by openai-codex.
+codex_bin = ""
+# Fail closed unless app-server is using the ChatGPT subscription login.
+auth_mode = "chatgpt"
+model = ""
+reasoning_effort = "high"
+service_tier = ""
+# 0 removes Arena's provider semaphore; organizer/provider limits still apply.
+max_concurrency = 0
+timeout_seconds = 900
+
+[providers.claude]
+# Claude Code is a full coding-agent harness with shell/read/write tools.
+availability = "disabled"
+command = "claude"
+model = "sonnet"
+max_concurrency = 0
+timeout_seconds = 600
+
+[providers.deepseek]
+# OpenCode is the default full coding-agent harness for DeepSeek.
+availability = "disabled"
+transport = "opencode"
+command = "opencode"
+# OpenCode model syntax is provider/model[#variant].
+model = "deepseek/deepseek-v4-flash"
+agent = ""
+standalone = false
+max_concurrency = 4
+timeout_seconds = 600
+# Set transport = "api" only for the legacy bounded-tool fallback, then configure:
+# base_url = "https://api.deepseek.com"
+# api_key_env = "DEEPSEEK_API_KEY"
+
+# Add one entry per separately authenticated CLI/API account. A service cell can
+# select instances by name in its [cell].provider_instances list.
+[[provider_instances]]
+availability = "disabled"
+name = "codex-b"
+family = "codex"
+transport = "sdk"
+codex_bin = ""
+auth_mode = "chatgpt"
+model = ""
+reasoning_effort = "high"
+max_concurrency = 0
+timeout_seconds = 900
+
+[[provider_instances]]
+availability = "disabled"
+name = "claude-b"
+family = "claude"
+command = "claude-b"
+model = "sonnet"
+max_concurrency = 0
+timeout_seconds = 600
+
+[[provider_instances]]
+availability = "disabled"
+name = "deepseek-b"
+family = "deepseek"
+transport = "opencode"
+command = "opencode"
+model = "deepseek/deepseek-v4-flash"
+max_concurrency = 4
+timeout_seconds = 600

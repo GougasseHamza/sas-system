@@ -1,0 +1,100 @@
+#!/bin/sh
+set -eu
+
+LAB_ROOT=/opt/sas-ad-lab
+BASE_IMAGE=localhost/sas-onlychess:2025
+action=${1:-}
+
+valid_revision() {
+    [ "$#" -eq 1 ] || return 1
+    case "$1" in
+        ''|*[!A-Za-z0-9_.-]*) return 1 ;;
+    esac
+    [ "${#1}" -le 80 ]
+}
+
+wait_for_service() {
+    attempt=0
+    until curl -fsS http://127.0.0.1:4000/ >/dev/null; do
+        attempt=$((attempt + 1))
+        [ "$attempt" -lt 60 ] || return 1
+        sleep 1
+    done
+}
+
+case "$action" in
+    verify)
+        [ "$#" -eq 2 ] && valid_revision "$2" || exit 2
+        revision=$2
+        candidate_root="$LAB_ROOT/candidates/$revision"
+        [ -f "$candidate_root/source.tar.gz" ]
+        cd "$candidate_root"
+        tar -xzf source.tar.gz
+        chmod 0755 main
+        podman build -t "localhost/sas-onlychess-candidate:$revision" \
+            -f Containerfile .
+        podman rm -f sas-onlychess-canary >/dev/null 2>&1 || true
+        trap 'podman rm -f sas-onlychess-canary >/dev/null 2>&1 || true' EXIT
+        podman run -d --name sas-onlychess-canary --network sas-ad-lab \
+            --memory 384m -p 127.0.0.1:4001:4000 \
+            "localhost/sas-onlychess-candidate:$revision" >/dev/null
+        attempt=0
+        until curl -fsS http://127.0.0.1:4001/ >/dev/null; do
+            attempt=$((attempt + 1))
+            [ "$attempt" -lt 60 ] || exit 1
+            sleep 1
+        done
+        ONLYCHESS_CHECKER_ROOT="$LAB_ROOT/checker" \
+            python3 "$LAB_ROOT/checker_roundtrip.py" \
+            --base-url http://127.0.0.1:4001 --wait-seconds 0.5
+        set +e
+        ONLYCHESS_CHECKER_ROOT="$LAB_ROOT/checker" \
+            python3 "$LAB_ROOT/chat_auth_probe.py" \
+            --base-url http://127.0.0.1:4001 --wait-seconds 0.5
+        probe_status=$?
+        set -e
+        [ "$probe_status" -eq 10 ]
+        ;;
+    deploy)
+        [ "$#" -eq 2 ] && valid_revision "$2" || exit 2
+        revision=$2
+        podman image exists "localhost/sas-onlychess-candidate:$revision"
+        current=$(cat "$LAB_ROOT/active-image" 2>/dev/null || printf %s "$BASE_IMAGE")
+        printf '%s\n' "$current" > "$LAB_ROOT/rollback-image"
+        printf '%s\n' "localhost/sas-onlychess-candidate:$revision" \
+            > "$LAB_ROOT/active-image"
+        podman rm -f sas-onlychess >/dev/null 2>&1 || true
+        systemctl restart sas-onlychess-lab.service
+        wait_for_service
+        ;;
+    rollback)
+        [ "$#" -eq 1 ] || exit 2
+        image=$(cat "$LAB_ROOT/rollback-image")
+        printf '%s\n' "$image" > "$LAB_ROOT/active-image"
+        podman rm -f sas-onlychess >/dev/null 2>&1 || true
+        systemctl restart sas-onlychess-lab.service
+        wait_for_service
+        ;;
+    reset)
+        [ "$#" -eq 1 ] || exit 2
+        systemctl stop sas-ad-simulator.service
+        systemctl stop sas-onlychess-lab.service
+        podman rm -f sas-onlychess-canary sas-onlychess sas-onlychess-db \
+            >/dev/null 2>&1 || true
+        podman volume rm sas-onlychess-db >/dev/null 2>&1 || true
+        printf '%s\n' "$BASE_IMAGE" > "$LAB_ROOT/active-image"
+        rm -f "$LAB_ROOT/rollback-image" "$LAB_ROOT/data/state.json"
+        systemctl start sas-onlychess-lab.service
+        systemctl start sas-ad-simulator.service
+        ;;
+    status)
+        [ "$#" -eq 1 ] || exit 2
+        systemctl is-active sas-onlychess-lab.service sas-ad-simulator.service
+        printf 'active-image='
+        cat "$LAB_ROOT/active-image"
+        ;;
+    *)
+        echo "usage: sas-arena-remote {verify REVISION|deploy REVISION|rollback|reset|status}" >&2
+        exit 2
+        ;;
+esac

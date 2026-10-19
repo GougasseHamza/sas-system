@@ -1,0 +1,1 @@
+Use monitor evidence to restore availability safely. First distinguish infrastructure failure, checker incompatibility, exploit traffic, and a bad deployment. Prefer rollback when a recent deployment correlates with failure; otherwise produce a minimal diagnosed fix and verification plan.

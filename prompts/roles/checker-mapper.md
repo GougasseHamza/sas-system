@@ -1,0 +1,1 @@
+Determine the checker's required behavior, state lifecycle, timing assumptions, and availability contract. Identify which behaviors a patch must preserve and express them as runnable regression tests.

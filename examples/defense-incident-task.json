@@ -1,0 +1,27 @@
+{
+  "service": "service-a",
+  "kind": "incident_response",
+  "lane": "defense",
+  "goal": "Diagnose the supplied availability regression, produce the smallest checker-safe patch, and leave it for deterministic verification and canary deployment.",
+  "workdir": "fixtures/generic-service",
+  "risk": "critical",
+  "expected_value": 1.0,
+  "deadline_seconds": 600,
+  "max_attempts": 2,
+  "dedupe_key": "service-a:incident:template-v1",
+  "context": {
+    "role": "incident-responder",
+    "captain_session": true,
+    "write_access": true,
+    "service_revision": "template-v1",
+    "untrusted_observations": [
+      {
+        "source": "monitor",
+        "summary": "Replace with the actual monitor packet"
+      }
+    ],
+    "verification": {
+      "commands": []
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "service": "service-a",
+  "kind": "source_map",
+  "lane": "analysis",
+  "goal": "Map entry points, identities, trust boundaries, persistent state, checker-sensitive behavior, and likely flag flows. Report exact evidence and the next deterministic tests.",
+  "workdir": "fixtures/generic-service",
+  "risk": "normal",
+  "expected_value": 0.7,
+  "deadline_seconds": 240,
+  "max_attempts": 2,
+  "dedupe_key": "service-a:source-map:template-v1",
+  "context": {
+    "role": "source-mapper",
+    "captain_session": false,
+    "write_access": false,
+    "service_revision": "template-v1",
+    "verification": {
+      "commands": []
+    }
+  }
+}

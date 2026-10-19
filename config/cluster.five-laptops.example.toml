@@ -1,0 +1,32 @@
+[cluster]
+expected_nodes = 5
+services_per_node = 2
+
+# Replace service IDs with those generated from the live event archive. Duplicate
+# assignments give every service a second independent pair of eyes when there are
+# five services and ten laptop slots.
+
+[[nodes]]
+id = "laptop-1"
+services = ["service-a", "service-b"]
+address = ""
+
+[[nodes]]
+id = "laptop-2"
+services = ["service-c", "service-d"]
+address = ""
+
+[[nodes]]
+id = "laptop-3"
+services = ["service-e", "service-a"]
+address = ""
+
+[[nodes]]
+id = "laptop-4"
+services = ["service-b", "service-c"]
+address = ""
+
+[[nodes]]
+id = "laptop-5"
+services = ["service-d", "service-e"]
+address = ""

@@ -1,0 +1,14 @@
+[Unit]
+Description=SAS OnlyChess isolated rehearsal service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/sas-ad-lab/start.sh
+ExecStop=/opt/sas-ad-lab/stop.sh
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

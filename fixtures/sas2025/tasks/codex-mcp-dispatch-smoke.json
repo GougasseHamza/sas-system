@@ -1,0 +1,19 @@
+{
+  "service": "onlychess",
+  "kind": "diagnose",
+  "goal": "First call the sas_dispatch dispatch_task tool to delegate a bounded chat authorization review, before reading source. Then inspect the chat route handlers yourself and return the strongest source-supported impact chain. Near the end, call get_worker_updates. Do not inspect parent directories, the official README, checker, or bundled exploits, and do not contact external systems.",
+  "workdir": "vendor/sasctf-finals-2025/onlychess/service",
+  "risk": "high",
+  "expected_value": 0.95,
+  "deadline_seconds": 360,
+  "max_attempts": 1,
+  "preferred_provider": "codex",
+  "dedupe_key": "onlychess:codex-mcp-dispatch-smoke:v4",
+  "context": {
+    "write_access": false,
+    "technical_objective": "Review the chat HTTP and WebSocket routes for missing game-participant authorization and identify the strongest source-supported impact.",
+    "verification": {
+      "commands": []
+    }
+  }
+}

@@ -1,0 +1,32 @@
+schema_version = 1
+id = "local-template"
+name = "Generic local A/D rehearsal"
+tick_seconds = 120
+flag_pattern = 'FLAG\{[^\r\n{}]{1,128}\}'
+services = ["services/service-a.toml"]
+
+[scope]
+network_enabled = false
+allowed_cidrs = []
+
+[submission]
+flag_lifetime_seconds = 300
+interval_seconds = 5
+batch_size = 100
+lease_seconds = 30
+
+[observation]
+hook = "observe"
+interval_seconds = 2
+
+[hooks.observe]
+argv = ["python3", "-c", "import json; print(json.dumps({'tick': 0, 'scoreboard': {}}))"]
+cwd = "."
+timeout_seconds = 5
+expected_returncodes = [0]
+
+[hooks.submit]
+argv = ["python3", "-c", "import sys; print('submitted', sys.argv[1])", "{flag}"]
+cwd = "."
+timeout_seconds = 5
+expected_returncodes = [0]
