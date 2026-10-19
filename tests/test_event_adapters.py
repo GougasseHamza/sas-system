@@ -79,6 +79,7 @@ submit_url = "http://127.0.0.1:{port}/submit"
                 length = int(self.headers["Content-Length"])
                 value = json.loads(self.rfile.read(length))
                 assert self.headers["X-Team-Token"] == "test-token"
+                assert self.headers["X-Attacker"] == "red-one"
                 assert value == ["A" * 31 + "="]
                 body = json.dumps(
                     [{"flag": value[0], "msg": "Flag accepted! Earned points!"}]
@@ -96,7 +97,9 @@ submit_url = "http://127.0.0.1:{port}/submit"
         thread.start()
         port = server.server_address[1]
         previous = os.environ.get("TEST_TEAM_TOKEN")
+        previous_attacker = os.environ.get("TEST_ATTACKER")
         os.environ["TEST_TEAM_TOKEN"] = "test-token"
+        os.environ["TEST_ATTACKER"] = "red-one"
         try:
             with tempfile.TemporaryDirectory() as temp:
                 config = Path(temp) / "adapter.toml"
@@ -112,6 +115,8 @@ accepted_contains = "Flag accepted!"
 token_env = "TEST_TEAM_TOKEN"
 token_header = "X-Team-Token"
 token_prefix = ""
+attacker_env = "TEST_ATTACKER"
+attacker_header = "X-Attacker"
 """.strip()
                 )
                 result = HttpEventAdapter.load(config).submit("A" * 31 + "=")
@@ -121,6 +126,10 @@ token_prefix = ""
                 os.environ.pop("TEST_TEAM_TOKEN", None)
             else:
                 os.environ["TEST_TEAM_TOKEN"] = previous
+            if previous_attacker is None:
+                os.environ.pop("TEST_ATTACKER", None)
+            else:
+                os.environ["TEST_ATTACKER"] = previous_attacker
             server.shutdown()
             server.server_close()
             thread.join(timeout=2)

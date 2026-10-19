@@ -10,4 +10,6 @@ accepted_contains = "Flag accepted!"
 token_env = "SAS_TEAM_TOKEN"
 token_header = "X-Team-Token"
 token_prefix = ""
+attacker_env = "SAS_ATTACKER"
+attacker_header = "X-Attacker"
 timeout_seconds = 5

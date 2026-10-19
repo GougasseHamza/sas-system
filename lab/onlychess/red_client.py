@@ -16,6 +16,7 @@ DEFAULT_BASE = os.environ.get(
     "SAS_ARENA_SCOREBOARD_URL", "http://147.182.179.38:8088"
 ).rstrip("/")
 DEFAULT_TOKEN = os.environ.get("SAS_TEAM_TOKEN", "rehearsal-team-token")
+DEFAULT_ATTACKER = os.environ.get("SAS_ATTACKER", "anonymous")
 
 
 def request_json(
@@ -47,6 +48,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=DEFAULT_BASE)
     parser.add_argument("--token", default=DEFAULT_TOKEN)
+    parser.add_argument("--attacker", default=DEFAULT_ATTACKER)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("status")
     commands.add_parser("attack-data")
@@ -75,7 +77,10 @@ def main() -> int:
                     f"{base}/flags",
                     [args.flag],
                     method="PUT",
-                    headers={"X-Team-Token": args.token},
+                    headers={
+                        "X-Team-Token": args.token,
+                        "X-Attacker": args.attacker,
+                    },
                 ),
                 indent=2,
                 sort_keys=True,

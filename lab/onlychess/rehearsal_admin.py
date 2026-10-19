@@ -7,6 +7,7 @@ import argparse
 import ipaddress
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -99,51 +100,69 @@ def validate_public_key(value: str) -> str:
     return key
 
 
-def onboard(host: str, source_ip: str, public_key_file: Path) -> None:
+def validate_teammate_name(value: str) -> str:
+    name = value.strip().lower()
+    if re.fullmatch(r"[a-z][a-z0-9-]{0,20}", name) is None:
+        raise ValueError(
+            "teammate name must start with a letter and contain only "
+            "lowercase letters, digits, or hyphens"
+        )
+    return name
+
+
+def onboard(
+    host: str, source_ip: str, public_key_file: Path, teammate_name: str
+) -> None:
     source_ip = validate_source_ip(source_ip)
     public_key = validate_public_key(public_key_file.read_text())
-    temporary_key = PROJECT_ROOT / ".arena" / "teammate-authorized-key.pub"
+    teammate_name = validate_teammate_name(teammate_name)
+    username = f"arena-{teammate_name}"
+    temporary_key = PROJECT_ROOT / ".arena" / f"{username}-authorized-key.pub"
     temporary_key.parent.mkdir(parents=True, exist_ok=True)
     temporary_key.write_text(public_key + "\n")
-    upload(host, temporary_key, "/tmp/arena-defender-authorized-key.pub")
-    sudoers = PROJECT_ROOT / ".arena" / "arena-defender.sudoers"
+    remote_key = f"/tmp/{username}-authorized-key.pub"
+    remote_sudoers = f"/tmp/{username}.sudoers"
+    upload(host, temporary_key, remote_key)
+    sudoers = PROJECT_ROOT / ".arena" / f"{username}.sudoers"
     sudoers.write_text(
-        "arena-defender ALL=(root) NOPASSWD: "
+        f"{username} ALL=(root) NOPASSWD: "
         "/usr/local/sbin/sas-arena-remote verify *, "
         "/usr/local/sbin/sas-arena-remote deploy *, "
         "/usr/local/sbin/sas-arena-remote rollback\n"
     )
-    upload(host, sudoers, "/tmp/arena-defender.sudoers")
+    upload(host, sudoers, remote_sudoers)
     quoted_ip = shlex.quote(source_ip)
     remote(
         host,
         "set -eu; "
-        "id -u arena-defender >/dev/null 2>&1 || "
-        "useradd --create-home --shell /bin/sh arena-defender; "
-        "install -d -m 0700 -o arena-defender -g arena-defender "
-        "/home/arena-defender/.ssh; "
-        "install -m 0600 -o arena-defender -g arena-defender "
-        "/tmp/arena-defender-authorized-key.pub "
-        "/home/arena-defender/.ssh/authorized_keys; "
-        "install -m 0440 -o root -g root /tmp/arena-defender.sudoers "
-        "/etc/sudoers.d/arena-defender; visudo -cf /etc/sudoers.d/arena-defender; "
-        "install -d -m 2770 -o root -g arena-defender "
+        "groupadd --force sas-arena-deploy; "
+        f"id -u {username} >/dev/null 2>&1 || "
+        f"useradd --create-home --user-group --shell /bin/sh {username}; "
+        f"usermod -a -G sas-arena-deploy {username}; "
+        f"install -d -m 0700 -o {username} -g {username} "
+        f"/home/{username}/.ssh; "
+        f"install -m 0600 -o {username} -g {username} "
+        f"{remote_key} /home/{username}/.ssh/authorized_keys; "
+        f"install -m 0440 -o root -g root {remote_sudoers} "
+        f"/etc/sudoers.d/{username}; "
+        f"visudo -cf /etc/sudoers.d/{username}; "
+        "install -d -m 2770 -o root -g sas-arena-deploy "
         "/opt/sas-ad-lab/candidates; "
         f"ufw allow from {quoted_ip} to any port 4000 proto tcp "
-        "comment 'SAS AD red-blue rehearsal'; "
+        f"comment 'SAS AD {teammate_name} challenge'; "
         f"ufw allow from {quoted_ip} to any port 8088 proto tcp "
-        "comment 'SAS AD red-blue simulator'; "
+        f"comment 'SAS AD {teammate_name} simulator'; "
         f"ufw route allow from {quoted_ip} to 10.89.0.0/24 port 4000 "
-        "proto tcp comment 'SAS AD red-blue container'; "
-        "rm -f /tmp/arena-defender-authorized-key.pub "
-        "/tmp/arena-defender.sudoers",
+        f"proto tcp comment 'SAS AD {teammate_name} container'; "
+        f"rm -f {remote_key} {remote_sudoers}",
     )
     print(
         json.dumps(
             {
                 "host": host,
                 "source_ip": source_ip,
-                "ssh_user": "arena-defender",
+                "teammate": teammate_name,
+                "ssh_user": username,
                 "status": "onboarded",
             },
             indent=2,
@@ -179,6 +198,7 @@ def main() -> int:
     reset_parser = commands.add_parser("reset")
     reset_parser.add_argument("--confirm", required=True)
     onboard_parser = commands.add_parser("onboard")
+    onboard_parser.add_argument("--name", required=True)
     onboard_parser.add_argument("--source-ip", required=True)
     onboard_parser.add_argument("--public-key-file", type=Path, required=True)
     args = parser.parse_args()
@@ -190,7 +210,7 @@ def main() -> int:
             raise ValueError("reset requires --confirm RESET-LAB")
         reset(args.host)
         return 0
-    onboard(args.host, args.source_ip, args.public_key_file)
+    onboard(args.host, args.source_ip, args.public_key_file, args.name)
     return 0
 
 

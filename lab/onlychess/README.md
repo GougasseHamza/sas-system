@@ -1,16 +1,24 @@
 # OnlyChess local gate
 
-The vendored service lives at:
+The portable rehearsal source lives at:
 
 ```text
-vendor/sasctf-finals-2025/onlychess/service
+lab/onlychess/service-source
 ```
+
+It contains only the historical service source needed for analysis and patch
+builds. The large database, official exploit, and writeup are not distributed
+to rehearsal defenders.
+
+`lab/onlychess/checker-source` contains only the protocol client and cipher
+library required by deterministic health and patch gates. It excludes the
+official checker logic and all competition credentials.
 
 Start the untouched service:
 
 ```bash
 docker compose -p sas_onlychess_mvp \
-  -f vendor/sasctf-finals-2025/onlychess/service/compose.yaml \
+  -f lab/onlychess/service-source/compose.yaml \
   up -d --build
 ```
 
@@ -34,7 +42,7 @@ Verify any candidate source tree in a fresh disposable database/network:
 
 ```bash
 uv run python lab/onlychess/verify_candidate.py \
-  --source-dir vendor/sasctf-finals-2025/onlychess/service
+  --source-dir lab/onlychess/service-source
 ```
 
 For patch approval, also supply a previously proven exploit command. The command
@@ -52,7 +60,7 @@ Stop it without deleting the database:
 
 ```bash
 docker compose -p sas_onlychess_mvp \
-  -f vendor/sasctf-finals-2025/onlychess/service/compose.yaml \
+  -f lab/onlychess/service-source/compose.yaml \
   down
 ```
 

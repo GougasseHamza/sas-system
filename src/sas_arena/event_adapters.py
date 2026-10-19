@@ -24,6 +24,8 @@ class HttpEventAdapter:
     token_env: str = ""
     token_header: str = "Authorization"
     token_prefix: str = "Bearer "
+    attacker_env: str = ""
+    attacker_header: str = "X-Attacker"
     timeout_seconds: float = 3.0
 
     @classmethod
@@ -59,6 +61,8 @@ class HttpEventAdapter:
             token_env=str(http.get("token_env", "")).strip(),
             token_header=str(http.get("token_header", "Authorization")),
             token_prefix=str(http.get("token_prefix", "Bearer ")),
+            attacker_env=str(http.get("attacker_env", "")).strip(),
+            attacker_header=str(http.get("attacker_header", "X-Attacker")),
             timeout_seconds=timeout,
         )
 
@@ -136,16 +140,21 @@ class HttpEventAdapter:
         return response.json()
 
     def _headers(self, *, required: bool) -> dict[str, str]:
-        if not self.token_env:
-            return {}
-        token = os.environ.get(self.token_env, "")
-        if not token:
-            if not required:
-                return {}
-            raise RuntimeError(
-                f"event adapter token environment variable is empty: {self.token_env}"
-            )
-        return {self.token_header: self.token_prefix + token}
+        headers: dict[str, str] = {}
+        if self.token_env:
+            token = os.environ.get(self.token_env, "")
+            if not token and required:
+                raise RuntimeError(
+                    "event adapter token environment variable is empty: "
+                    f"{self.token_env}"
+                )
+            if token:
+                headers[self.token_header] = self.token_prefix + token
+        if self.attacker_env:
+            attacker = os.environ.get(self.attacker_env, "").strip()
+            if attacker:
+                headers[self.attacker_header] = attacker
+        return headers
 
 
 def _path(value: Any, path: str) -> Any:

@@ -1,0 +1,98 @@
+[state]
+database = ".arena/onlychess-attacker.db"
+run_root = ".arena/attacker-worktrees"
+artifact_root = ".arena/attacker-artifacts"
+
+[scope]
+allowed_roots = ["."]
+network_enabled = true
+allowed_cidrs = ["147.182.179.38/32"]
+
+[prompts]
+root = "prompts"
+
+[routing]
+codex_hedge_delay_seconds = 20
+max_parallel_candidates = 4
+
+[promotion]
+auto_promote_exploits = true
+
+[phases]
+grace_duration_seconds = 1800
+
+[phases.setup]
+cell_workers = 2
+codex_tasks_per_service = 0
+shadow_children_per_codex = 0
+offense_enabled = false
+submission_enabled = false
+monitoring_enabled = false
+traffic_enabled = false
+
+[phases.grace]
+cell_workers = 10
+codex_tasks_per_service = 5
+shadow_children_per_codex = 10
+offense_enabled = false
+submission_enabled = false
+monitoring_enabled = false
+traffic_enabled = false
+
+[phases.live]
+cell_workers = 10
+codex_tasks_per_service = 0
+shadow_children_per_codex = 10
+offense_enabled = true
+submission_enabled = true
+monitoring_enabled = false
+traffic_enabled = false
+
+[phases.frozen]
+cell_workers = 10
+codex_tasks_per_service = 0
+shadow_children_per_codex = 10
+offense_enabled = true
+submission_enabled = true
+monitoring_enabled = false
+traffic_enabled = false
+
+[phases.ended]
+cell_workers = 1
+codex_tasks_per_service = 0
+shadow_children_per_codex = 0
+offense_enabled = false
+submission_enabled = false
+monitoring_enabled = false
+traffic_enabled = false
+
+[shadow]
+enabled = true
+max_children_per_parent = 16
+default_deadline_seconds = 240
+
+[providers.codex]
+availability = "required"
+transport = "sdk"
+codex_bin = ""
+auth_mode = "chatgpt"
+model = ""
+reasoning_effort = "high"
+service_tier = ""
+max_concurrency = 0
+timeout_seconds = 900
+
+[providers.claude]
+availability = "optional"
+command = "claude"
+model = "sonnet"
+max_concurrency = 0
+timeout_seconds = 600
+
+[providers.deepseek]
+availability = "optional"
+transport = "opencode"
+command = "opencode"
+model = "deepseek/deepseek-v4-flash"
+max_concurrency = 4
+timeout_seconds = 600

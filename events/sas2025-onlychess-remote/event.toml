@@ -20,11 +20,11 @@ hook = "observe"
 interval_seconds = 2
 
 [hooks.observe]
-argv = ["uv", "run", "sas-arena", "--config", "../../config/arena.onlychess-remote.toml", "event-http-observe", "adapter.toml"]
+argv = ["uv", "run", "--no-sync", "sas-arena", "--config", "../../config/arena.onlychess-remote.toml", "event-http-observe", "adapter.toml"]
 cwd = "."
 timeout_seconds = 10
 
 [hooks.submit]
-argv = ["uv", "run", "sas-arena", "--config", "../../config/arena.onlychess-remote.toml", "event-http-submit-batch", "adapter.toml", "{flags_json}"]
+argv = ["uv", "run", "--no-sync", "sas-arena", "--config", "../../config/arena.onlychess-remote.toml", "event-http-submit-batch", "adapter.toml", "{flags_json}"]
 cwd = "."
 timeout_seconds = 10

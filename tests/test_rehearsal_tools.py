@@ -25,6 +25,7 @@ class RehearsalToolTests(unittest.TestCase):
             admin.validate_public_key("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 test"),
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 test",
         )
+        self.assertEqual(admin.validate_teammate_name("Kodo"), "kodo")
 
     def test_rejects_non_public_teammate_ip(self) -> None:
         admin = load_admin()
@@ -36,6 +37,12 @@ class RehearsalToolTests(unittest.TestCase):
         admin = load_admin()
         with self.assertRaises(ValueError):
             admin.validate_public_key("ssh-ed25519 AAAA\nsecond-line")
+
+    def test_rejects_unsafe_teammate_name(self) -> None:
+        admin = load_admin()
+        for name in ("", "1kodo", "Kodo User", "kodo;root"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                admin.validate_teammate_name(name)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import urllib.request
+from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -62,6 +63,7 @@ class CompetitionState:
         self.last_round_at = 0.0
         self.flags: list[dict[str, Any]] = []
         self.submissions: dict[str, float] = {}
+        self.submission_owners: dict[str, str] = {}
         self._load()
 
     def _load(self) -> None:
@@ -78,6 +80,10 @@ class CompetitionState:
             str(key): float(item)
             for key, item in dict(value.get("submissions", {})).items()
         }
+        self.submission_owners = {
+            str(key): str(item)
+            for key, item in dict(value.get("submission_owners", {})).items()
+        }
 
     def _save(self) -> None:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -91,6 +97,7 @@ class CompetitionState:
                     "last_round_at": self.last_round_at,
                     "flags": self.flags,
                     "submissions": self.submissions,
+                    "submission_owners": self.submission_owners,
                 },
                 sort_keys=True,
             )
@@ -113,6 +120,9 @@ class CompetitionState:
                 "next_tick_at": self.last_round_at + self.round_seconds,
                 "active_flags": len(active),
                 "accepted_submissions": len(self.submissions),
+                "attacker_submissions": dict(
+                    sorted(Counter(self.submission_owners.values()).items())
+                ),
                 "attack_data": None if latest is None else {"game_id": latest["game"]},
             }
 
@@ -121,7 +131,7 @@ class CompetitionState:
         minimum = max(1, current_tick - self.flag_lifetime_rounds + 1)
         return [item for item in self.flags if int(item["tick"]) >= minimum]
 
-    def submit(self, flag: str) -> tuple[str, int]:
+    def submit(self, flag: str, attacker: str = "anonymous") -> tuple[str, int]:
         with self.lock:
             if self.status != "UP":
                 return "own_service_not_up", 409
@@ -129,7 +139,11 @@ class CompetitionState:
                 return "duplicate", 409
             if not any(item["flag"] == flag for item in self._active_flags()):
                 return "invalid_or_expired", 400
+            attacker = re.sub(r"[^a-zA-Z0-9_.-]", "-", attacker.strip())[:32]
+            if not attacker:
+                attacker = "anonymous"
             self.submissions[flag] = time.time()
+            self.submission_owners[flag] = attacker
             self._save()
             return "accepted", 200
 
@@ -307,8 +321,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": str(error)}, 400)
             return
         results = []
+        attacker = self.headers.get("X-Attacker", "anonymous")
         for flag in flags[:100]:
-            status, _ = self.state.submit(flag)
+            status, _ = self.state.submit(flag, attacker)
             messages = {
                 "accepted": "Flag accepted! Earned rehearsal flag points!",
                 "duplicate": "Flag is already submitted.",
@@ -326,7 +341,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "invalid JSON"}, 400)
             return
         if self.path == "/api/submit":
-            status, code = self.state.submit(str(payload.get("flag", "")))
+            status, code = self.state.submit(
+                str(payload.get("flag", "")),
+                self.headers.get("X-Attacker", "anonymous"),
+            )
             self._json({"status": status}, code)
             return
         if self.path == "/api/tick":

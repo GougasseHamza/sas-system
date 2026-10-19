@@ -16,11 +16,9 @@ class SpecTests(unittest.TestCase):
 
     def test_remote_onlychess_rehearsal_descriptor_is_valid(self):
         root = Path(__file__).resolve().parents[1]
-        vendor_root = (
-            root / "vendor/sasctf-finals-2025/onlychess/service"
-        )
-        if not vendor_root.exists():
-            self.skipTest("optional SAS 2025 replay archive is not installed")
+        rehearsal_root = root / "lab/onlychess/service-source"
+        if not rehearsal_root.exists():
+            self.skipTest("portable OnlyChess rehearsal source is not installed")
         event = EventSpec.load(
             root / "events/sas2025-onlychess-remote/event.toml"
         )

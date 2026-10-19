@@ -15,7 +15,6 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SSH_RUN_ROOT = PROJECT_ROOT / "tools" / "ssh-run"
-CONTAINERFILE = PROJECT_ROOT / "lab" / "onlychess" / "remote" / "Containerfile"
 REMOTE_HELPER = "/usr/local/sbin/sas-arena-remote"
 
 
@@ -87,12 +86,10 @@ def candidate_bundle(source: Path, revision: str) -> Path:
         env=environment,
     )
     shutil.copytree(source / "templates", temporary / "templates")
-    shutil.copy2(CONTAINERFILE, temporary / "Containerfile")
     archive = temporary / f"{revision}.tar.gz"
     with tarfile.open(archive, "w:gz") as bundle:
         bundle.add(binary, arcname="main")
         bundle.add(temporary / "templates", arcname="templates")
-        bundle.add(temporary / "Containerfile", arcname="Containerfile")
     return archive
 
 

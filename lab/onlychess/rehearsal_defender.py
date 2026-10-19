@@ -19,7 +19,7 @@ EVENT = "events/sas2025-onlychess-remote/event.toml"
 
 
 def arena(*arguments: str) -> list[str]:
-    return ["uv", "run", "sas-arena", "--config", CONFIG, *arguments]
+    return ["uv", "run", "--no-sync", "sas-arena", "--config", CONFIG, *arguments]
 
 
 def checked(*arguments: str) -> None:

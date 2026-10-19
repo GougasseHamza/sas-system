@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CHECKER_ROOT = Path(
     os.environ.get(
         "ONLYCHESS_CHECKER_ROOT",
-        PROJECT_ROOT / "vendor" / "sasctf-finals-2025" / "onlychess" / "checker",
+        PROJECT_ROOT / "lab" / "onlychess" / "checker-source",
     )
 )
 sys.path.insert(0, str(CHECKER_ROOT))

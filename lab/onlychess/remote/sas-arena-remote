@@ -3,6 +3,8 @@ set -eu
 
 LAB_ROOT=/opt/sas-ad-lab
 BASE_IMAGE=localhost/sas-onlychess:2025
+BUILD_ROOT="$LAB_ROOT/builds"
+APPROVED_ROOT="$LAB_ROOT/approved"
 action=${1:-}
 
 valid_revision() {
@@ -28,9 +30,56 @@ case "$action" in
         revision=$2
         candidate_root="$LAB_ROOT/candidates/$revision"
         [ -f "$candidate_root/source.tar.gz" ]
-        cd "$candidate_root"
-        tar -xzf source.tar.gz
-        chmod 0755 main
+        build_root="$BUILD_ROOT/$revision"
+        rm -rf "$build_root"
+        install -d -m 0700 -o root -g root "$build_root"
+        python3 - "$candidate_root/source.tar.gz" "$build_root" <<'PY'
+import os
+import shutil
+import sys
+import tarfile
+from pathlib import Path, PurePosixPath
+
+archive = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+maximum_bytes = 64 * 1024 * 1024
+with tarfile.open(archive, "r:gz") as bundle:
+    members = bundle.getmembers()
+    if len(members) > 2000:
+        raise ValueError("candidate archive contains too many members")
+    total = 0
+    for member in members:
+        path = PurePosixPath(member.name)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"unsafe candidate path: {member.name}")
+        allowed = member.name in {"main", "Containerfile", "templates"} or (
+            len(path.parts) > 1 and path.parts[0] == "templates"
+        )
+        if not allowed or not (member.isdir() or member.isfile()):
+            raise ValueError(f"unsupported candidate member: {member.name}")
+        total += member.size
+        if total > maximum_bytes:
+            raise ValueError("candidate archive is too large")
+        if member.name == "Containerfile":
+            continue
+        target = destination.joinpath(*path.parts)
+        if member.isdir():
+            target.mkdir(parents=True, exist_ok=True)
+            os.chmod(target, 0o755)
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        source = bundle.extractfile(member)
+        if source is None:
+            raise ValueError(f"could not read candidate member: {member.name}")
+        with source, target.open("wb") as output:
+            shutil.copyfileobj(source, output)
+        os.chmod(target, 0o755 if member.name == "main" else 0o644)
+if not (destination / "main").is_file() or not (destination / "templates").is_dir():
+    raise ValueError("candidate must contain main and templates")
+PY
+        install -m 0644 -o root -g root "$LAB_ROOT/Containerfile" \
+            "$build_root/Containerfile"
+        cd "$build_root"
         podman build -t "localhost/sas-onlychess-candidate:$revision" \
             -f Containerfile .
         podman rm -f sas-onlychess-canary >/dev/null 2>&1 || true
@@ -54,10 +103,14 @@ case "$action" in
         probe_status=$?
         set -e
         [ "$probe_status" -eq 10 ]
+        install -d -m 0700 -o root -g root "$APPROVED_ROOT"
+        printf '%s\n' "localhost/sas-onlychess-candidate:$revision" \
+            > "$APPROVED_ROOT/$revision"
         ;;
     deploy)
         [ "$#" -eq 2 ] && valid_revision "$2" || exit 2
         revision=$2
+        [ -f "$APPROVED_ROOT/$revision" ]
         podman image exists "localhost/sas-onlychess-candidate:$revision"
         current=$(cat "$LAB_ROOT/active-image" 2>/dev/null || printf %s "$BASE_IMAGE")
         printf '%s\n' "$current" > "$LAB_ROOT/rollback-image"

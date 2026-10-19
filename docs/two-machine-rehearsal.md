@@ -41,6 +41,7 @@ The administrator then runs:
 
 ```bash
 uv run python lab/onlychess/rehearsal_admin.py onboard \
+  --name TEAMMATE_NAME \
   --source-ip TEAMMATE_PUBLIC_IP \
   --public-key-file TEAMMATE_KEY.pub
 ```
@@ -48,7 +49,7 @@ uv run python lab/onlychess/rehearsal_admin.py onboard \
 The defender exports these values before launching Arena:
 
 ```bash
-export SAS_ARENA_SSH_USER=arena-defender
+export SAS_ARENA_SSH_USER=arena-TEAMMATE_NAME
 export SAS_ARENA_SSH_KEY="$HOME/.ssh/sas-arena-defender"
 ```
 
@@ -72,14 +73,31 @@ The attacker should not receive source, checker credentials, or defender SSH
 credentials. The small client exposes only public competition functions:
 
 ```bash
-python3 lab/onlychess/red_client.py watch
-python3 lab/onlychess/red_client.py attack-data
-python3 lab/onlychess/red_client.py submit 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+python3 lab/onlychess/red_client.py --attacker YOUR_NAME watch
+python3 lab/onlychess/red_client.py --attacker YOUR_NAME attack-data
+python3 lab/onlychess/red_client.py --attacker YOUR_NAME submit \
+  'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
 ```
 
 Attack the challenge at `http://147.182.179.38:4000`. Previous flags remain
 valid for five ticks, matching the SAS 2026 ten-minute lifetime. The client uses
-the ForcAD-shaped attack-data and `PUT /flags` interfaces.
+the ForcAD-shaped attack-data and `PUT /flags` interfaces. The rehearsal
+scoreboard attributes accepted submissions using the client-only `X-Attacker`
+label so concurrent red-team players can compare results.
+
+To run the full offense-only agent cell instead of attacking manually:
+
+```bash
+export SAS_ATTACKER=YOUR_NAME
+export SAS_TEAM_TOKEN=rehearsal-team-token
+uv run python lab/onlychess/rehearsal_attacker.py --name "$SAS_ATTACKER"
+```
+
+This profile allows source analysis, exploit construction, deterministic
+exploit verification, farming, and submission. It disables service monitoring,
+traffic intelligence, patching, and deployment so red-team players cannot use
+blue-team evidence. Run `agent-watch` or `agent-message` from another terminal
+with `config/arena.onlychess-attacker.toml` to observe or steer the workers.
 
 ## Defender laptop
 

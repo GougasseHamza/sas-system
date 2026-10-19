@@ -1,7 +1,7 @@
 schema_version = 1
 id = "onlychess"
 name = "SAS 2025 OnlyChess remote rehearsal"
-root = "../../../vendor/sasctf-finals-2025/onlychess/service"
+root = "../../../lab/onlychess/service-source"
 tags = ["sas-2025", "web", "crypto", "remote-lab"]
 
 [targets]
@@ -23,8 +23,8 @@ argv = ["curl", "--fail", "--silent", "--show-error", "--max-time", "5", "--outp
 timeout_seconds = 8
 
 [hooks.checker]
-argv = ["uv", "run", "python", "checker_roundtrip.py", "--base-url", "http://147.182.179.38:4000", "--wait-seconds", "0.5"]
-cwd = "../../../../lab/onlychess"
+argv = ["uv", "run", "--no-sync", "python", "checker_roundtrip.py", "--base-url", "http://147.182.179.38:4000", "--wait-seconds", "0.5"]
+cwd = ".."
 timeout_seconds = 45
 
 [hooks.integrity]
@@ -32,25 +32,25 @@ argv = ["python3", "-c", "import requests; value=requests.get('http://147.182.17
 timeout_seconds = 8
 
 [hooks.verify_exploit]
-argv = ["uv", "run", "python", "verify_remote_exploit.py", "--candidate-root", "{candidate_root}", "--host", "147.182.179.38"]
-cwd = "../../../../lab/onlychess"
+argv = ["uv", "run", "--no-sync", "python", "verify_remote_exploit.py", "--candidate-root", "{candidate_root}", "--host", "147.182.179.38"]
+cwd = ".."
 timeout_seconds = 120
 
 [hooks.verify_patch]
-argv = ["uv", "run", "python", "remote_patch.py", "verify", "--candidate-root", "{candidate_root}", "--revision", "{revision}", "--host", "147.182.179.38"]
-cwd = "../../../../lab/onlychess"
+argv = ["uv", "run", "--no-sync", "python", "remote_patch.py", "verify", "--candidate-root", "{candidate_root}", "--revision", "{revision}", "--host", "147.182.179.38"]
+cwd = ".."
 timeout_seconds = 240
 env = { SAS_ARENA_SSH_HOSTKEY = "SHA256:wDYo0ZCFN99EbSzVrmF0VnbhvH+ExgwGd8BNtt+8zhg" }
 
 [hooks.deploy]
-argv = ["uv", "run", "python", "remote_patch.py", "deploy", "--revision", "{revision}", "--host", "147.182.179.38"]
-cwd = "../../../../lab/onlychess"
+argv = ["uv", "run", "--no-sync", "python", "remote_patch.py", "deploy", "--revision", "{revision}", "--host", "147.182.179.38"]
+cwd = ".."
 timeout_seconds = 120
 env = { SAS_ARENA_SSH_HOSTKEY = "SHA256:wDYo0ZCFN99EbSzVrmF0VnbhvH+ExgwGd8BNtt+8zhg" }
 
 [hooks.rollback]
-argv = ["uv", "run", "python", "remote_patch.py", "rollback", "--host", "147.182.179.38"]
-cwd = "../../../../lab/onlychess"
+argv = ["uv", "run", "--no-sync", "python", "remote_patch.py", "rollback", "--host", "147.182.179.38"]
+cwd = ".."
 timeout_seconds = 120
 env = { SAS_ARENA_SSH_HOSTKEY = "SHA256:wDYo0ZCFN99EbSzVrmF0VnbhvH+ExgwGd8BNtt+8zhg" }
 
